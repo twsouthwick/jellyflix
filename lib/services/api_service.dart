@@ -69,21 +69,23 @@ class ApiService {
     return _user!;
   }
 
-  Future<void> registerAccessToken(String baseUrl, String accessToken) async {
+  Future<void> registerAccessToken(User user) async {
+    _user = user;
+
     String authHeader = await buildHeader();
     await buildHeader();
 
     _jellyfinApi = Tentacle(
         dio: Dio(BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: user.serverAdress!,
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(seconds: 5),
     )));
 
     headers["Authorization"] =
-        "$authHeader, Token=\"${accessToken}\"";
+        "$authHeader, Token=\"${user.token}\"";
 
-    headers["Origin"] = baseUrl;
+    headers["Origin"] = user.serverAdress!;
   }
 
   Future<User?> loginByQuickConnect(String baseUrl,

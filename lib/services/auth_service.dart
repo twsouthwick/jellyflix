@@ -41,14 +41,18 @@ class AuthService {
         return false;
       }
       User? user = _databaseService.get(profileId);
+
       try {
-        await login(user!);
-        _authStateStream.add(true);
-        return true;
+        if (user != null) {
+          await _apiService.registerAccessToken(user);
+          _authStateStream.add(true);
+          return true;
+        }
       } catch (_) {
+      }
+
         _authStateStream.add(false);
         return false;
-      }
     }
   }
 
@@ -136,7 +140,7 @@ class AuthService {
   Future switchProfile(String profileId) async {
     User? user = _databaseService.get(profileId);
     if (user != null && user.serverAdress != null && user.token != null) {
-      await _apiService.registerAccessToken(user.serverAdress!, user.token!);
+      await _apiService.registerAccessToken(user);
       _authStateStream.add(true);
     } else {
       throw Exception("Profile not found");
