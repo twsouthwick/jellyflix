@@ -6,9 +6,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:jellyflix/components/quick_connect_login_dialog.dart';
 import 'package:jellyflix/models/screen_paths.dart';
 import 'package:jellyflix/models/user.dart';
 import 'package:jellyflix/providers/auth_provider.dart';
+import 'dart:math';
 
 class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
@@ -90,33 +92,68 @@ class LoginScreen extends HookConsumerWidget {
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10.0),
-                          child: SizedBox(
-                            height: 45,
-                            width: 100,
-                            child: ValueListenableBuilder(
-                                valueListenable: loadingListenable,
-                                builder: (context, isLoading, _) {
-                                  return isLoading
-                                      ? const Center(
-                                          child: CircularProgressIndicator())
-                                      : FilledButton(
-                                          onPressed: () async => await login(
-                                            context,
-                                            ref,
-                                            loadingListenable,
-                                            username: userName.text,
-                                            serverAddress: serverAddress.text,
-                                            password: password.text,
-                                          ),
-                                          child: Text(
-                                            AppLocalizations.of(context)!.login,
-                                          ),
-                                        );
-                                }),
-                          ),
-                        ),
+                        Row(children: [
+                          Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 10.0),
+                              child: SizedBox(
+                                height: 45,
+                                width: 100,
+                                child: ValueListenableBuilder(
+                                    valueListenable: loadingListenable,
+                                    builder: (context, isLoading, _) {
+                                      return isLoading
+                                          ? const Center(
+                                              child:
+                                                  CircularProgressIndicator())
+                                          : FilledButton(
+                                              onPressed: () async =>
+                                                  await login(
+                                                context,
+                                                ref,
+                                                loadingListenable,
+                                                username: userName.text,
+                                                serverAddress:
+                                                    serverAddress.text,
+                                                password: password.text,
+                                              ),
+                                              child: Text(
+                                                AppLocalizations.of(context)!
+                                                    .login,
+                                              ),
+                                            );
+                                    }),
+                              )),
+                          Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 10.0),
+                              child: SizedBox(
+                                height: 45,
+                                width: 100,
+                                child: ValueListenableBuilder(
+                                    valueListenable: loadingListenable,
+                                    builder: (context, isLoading, _) {
+                                      return isLoading
+                                          ? const Center(
+                                              child:
+                                                  CircularProgressIndicator())
+                                          : FilledButton(
+                                              onPressed: () async =>
+                                                  await loginQuickConnect(
+                                                context,
+                                                ref,
+                                                loadingListenable,
+                                                serverAddress:
+                                                    serverAddress.text,
+                                              ),
+                                              child: Text(
+                                                AppLocalizations.of(context)!
+                                                    .quickConnect,
+                                              ),
+                                            );
+                                    }),
+                              ))
+                        ]),
                         kIsWeb
                             ? Text(AppLocalizations.of(context)!.webDemoNote)
                             : const SizedBox(),
@@ -130,6 +167,35 @@ class LoginScreen extends HookConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> loginQuickConnect(
+    BuildContext context,
+    WidgetRef ref,
+    ValueNotifier<bool> loadingListenable, {
+    required String serverAddress,
+  }) async {
+    if (serverAddress.isEmpty) {
+      loadingListenable.value = false;
+      await showInfoDialog(
+        context,
+        Text(
+          AppLocalizations.of(context)!.emptyFields,
+        ),
+        content: Text(AppLocalizations.of(context)!.emptyAddress),
+      );
+
+      return;
+    }
+
+    await showDialog(
+        context: context,
+        builder: (item) => QuickConnectLoginDialog(
+            serverUrl: serverAddress, authProvider: authProvider));
+
+    if (context.mounted) {
+      context.go(ScreenPaths.home);
+    }
   }
 
   Future<void> login(

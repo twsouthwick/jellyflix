@@ -1,0 +1,28 @@
+name: jellyflix
+version: 0.1.0
+summary: Jellyfin app
+description: Jellyfin
+
+confinement: strict
+base: core24
+grade: stable
+
+slots:
+  dbus-jellyflix: # adjust accordingly to your app name
+    interface: dbus
+    bus: session
+    name: jellyflix
+    
+apps:
+  jellyflix:
+    command: jellyflix 
+    extensions: [gnome] # gnome includes the libraries required by flutter
+    plugs:
+    - network
+    slots:
+      - dbus-super-cool-app
+parts:
+  jellyflix:
+    source: .
+    plugin: flutter
+    flutter-target: lib/main.dart # The main entry-point file of the application

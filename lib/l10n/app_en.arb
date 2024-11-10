@@ -42,6 +42,7 @@
           }
         }
       },
+    "quickConnect": "QuickConnect",
     "recommendedForYou": "Recommended for you",
     "play": "Play",
     "moreInfo": "More Info",

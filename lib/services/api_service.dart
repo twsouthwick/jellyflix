@@ -8,6 +8,7 @@ import 'package:jellyflix/navigation/app_router.dart';
 import 'package:jellyflix/services/device_info_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:tentacle/tentacle.dart';
+import 'package:tentacle/src/model/quick_connect_dto.dart';
 import 'package:built_collection/built_collection.dart';
 
 class ApiService {
@@ -66,6 +67,87 @@ class ApiService {
       token: response.data!.accessToken!,
     );
     return _user!;
+  }
+
+  Future<void> registerAccessToken(String baseUrl, String accessToken) async {
+    String authHeader = await buildHeader();
+    await buildHeader();
+
+    _jellyfinApi = Tentacle(
+        dio: Dio(BaseOptions(
+      baseUrl: baseUrl,
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 5),
+    )));
+
+    headers["Authorization"] =
+        "$authHeader, Token=\"${accessToken}\"";
+
+    headers["Origin"] = baseUrl;
+  }
+
+  Future<User?> loginByQuickConnect(String baseUrl,
+      Function(String) secretCallback, CancelToken token) async {
+    // TODO add error handling
+    String authHeader = await buildHeader();
+    await buildHeader();
+    _jellyfinApi = Tentacle(
+        dio: Dio(BaseOptions(
+      baseUrl: baseUrl,
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 5),
+    )));
+
+    var response = await _jellyfinApi!
+        .getQuickConnectApi()
+        .initiateQuickConnect(headers: headers);
+
+    if (response.statusCode != 200) {
+      return null;
+    }
+
+    var code = response.data?.code;
+
+    if (code == null) {
+      return null;
+    }
+
+    secretCallback(code);
+
+    while (!token.isCancelled) {
+      var stateResponse = await _jellyfinApi
+          ?.getQuickConnectApi()
+          .getQuickConnectState(secret: response.data!.secret!, cancelToken: token);
+
+      if (stateResponse?.data?.authenticated == true) {
+        var response =
+            await _jellyfinApi?.getUserApi().authenticateWithQuickConnect(
+                  quickConnectDto: QuickConnectDto(
+                      (b) => b..secret = stateResponse!.data!.secret),
+                  headers: headers,
+                  cancelToken: token,
+                );
+
+        if (response!.statusCode != 200) {
+          return null;
+        }
+
+        headers["Authorization"] =
+            "$authHeader, Token=\"${response.data!.accessToken!}\"";
+
+        headers["Origin"] = baseUrl;
+        _user = User(
+          id: response.data!.user!.id,
+          name: response.data!.user!.name,
+          serverAdress: baseUrl,
+          token: response.data!.accessToken!,
+        );
+
+        return _user;
+      }
+    }
+
+    return null;
   }
 
   Future<void> logout() async {
